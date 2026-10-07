@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Patch Pulse: what users love or hate after every app update</title>
+<meta name="description" content="Pick any Android app and see how users feel about crashes, pricing, ads, support and design, release by release.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #f4f6f8; --surface: #ffffff; --ink: #10233a; --muted: #5b6b7b; --line: #dce3ea;
+  --neg-3: #b3261e; --neg-2: #e2483d; --neg-1: #f4aaa2; --neu: #e6ebf0;
+  --pos-1: #a3dcd2; --pos-2: #1fa58f; --pos-3: #11766a; --accent: #1f4e79;
+  --paper: #fbf3f2; --grid-fine: rgba(226, 72, 61, .08); --grid-bold: rgba(226, 72, 61, .16);
+  --shadow: 0 18px 50px rgba(16, 35, 58, .12), 0 2px 6px rgba(16, 35, 58, .06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f151b; --surface: #182029; --ink: #e9eef3; --muted: #9aa9b7; --line: #2a3541;
+    --neu: #26303a; --neg-1: #7a3a35; --pos-1: #24564f; --accent: #8db8e0;
+    --paper: #1a1416; --grid-fine: rgba(226, 72, 61, .07); --grid-bold: rgba(226, 72, 61, .14);
+    --shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f151b; --surface: #182029; --ink: #e9eef3; --muted: #9aa9b7; --line: #2a3541;
+  --neu: #26303a; --neg-1: #7a3a35; --pos-1: #24564f; --accent: #8db8e0;
+  --paper: #1a1416; --grid-fine: rgba(226, 72, 61, .07); --grid-bold: rgba(226, 72, 61, .14);
+  --shadow: 0 18px 50px rgba(0, 0, 0, .45);
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px; line-height: 1.55;
+}
+main { max-width: 1120px; margin: 0 auto; padding: 0 20px 96px; }
+h1, h2, h3, .display { font-family: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif; }
+
+/* hero: ECG paper with a heartbeat drawn from real release data */
+.hero {
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid-bold) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-bold) 1px, transparent 1px),
+    linear-gradient(var(--grid-fine) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-fine) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+  border-bottom: 1px solid var(--line);
+  padding: 22px 0 120px;
+}
+.hero-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+.brand { font-family: "Bricolage Grotesque", sans-serif; font-weight: 800; font-size: 19px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; margin-bottom: 56px; }
+.brand svg { width: 30px; height: 18px; }
+h1 {
+  font-weight: 800; font-size: clamp(38px, 6.6vw, 76px); line-height: .98; letter-spacing: -0.035em;
+  margin: 0 0 18px; max-width: 13ch;
+}
+.lede { color: var(--muted); max-width: 56ch; margin: 0; font-size: 18px; }
+.pulse-wrap { margin-top: 36px; position: relative; }
+.pulse-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.pulse-svg .line { fill: none; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.pulse-svg .tick { font: 500 12px "Instrument Sans", sans-serif; fill: var(--muted); }
+.pulse-svg .note { font: 600 13px "Instrument Sans", sans-serif; fill: var(--neg-3); }
+.pulse-svg .dot { fill: var(--neg-2); }
+.pulse-svg .halo { fill: var(--neg-2); opacity: .18; }
+.pulse-cap { color: var(--muted); font-size: 13.5px; margin-top: 6px; }
+.pulse-crop { display: flex; justify-content: flex-end; overflow: hidden; }
+@media (max-width: 760px) { .pulse-svg { flex: none; width: 760px; } .hero { padding-bottom: 96px; } }
+
+h2 { font-size: clamp(24px, 3vw, 30px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; margin: 0 0 8px; }
+h3 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+.sub { color: var(--muted); margin: 0 0 20px; max-width: 66ch; }
+section.block { margin-top: 72px; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* picker */
+.picker {
+  position: relative; z-index: 5; margin-top: -84px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 18px; padding: 22px; max-width: 860px; box-shadow: var(--shadow);
+}
+.slots { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 10px; align-items: end; }
+.vs { align-self: end; height: 49px; display: grid; place-items: center; font: 800 14px "Bricolage Grotesque", sans-serif; color: var(--muted); }
+.vs span { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); background: var(--bg); }
+@media (max-width: 640px) { .slots { grid-template-columns: 1fr; } .vs { height: auto; } }
+.slot { position: relative; }
+.slot label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.slot input {
+  width: 100%; padding: 13px 14px; border-radius: 10px; border: 1.5px solid var(--line);
+  background: var(--bg); outline: none; font-size: 16px;
+}
+.slot input:focus { border-color: var(--ink); background: var(--surface); }
+.chosen { display: flex; align-items: center; gap: 10px; padding: 7px 8px 7px 7px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); min-height: 47px; }
+.chosen img { width: 32px; height: 32px; border-radius: 8px; }
+.chosen .t { flex: 1; min-width: 0; }
+.chosen .t b { display: block; font-weight: 600; font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chosen .t small { color: var(--muted); font-size: 12.5px; }
+.chosen button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 6px; }
+.chosen button:hover { color: var(--ink); background: var(--line); }
+.results-list {
+  position: absolute; z-index: 10; left: 0; right: 0; top: calc(100% + 4px); list-style: none; margin: 0; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(15, 30, 45, .14);
+  max-height: 360px; overflow-y: auto;
+}
+.results-list li { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 7px; cursor: pointer; }
+.results-list li[aria-selected="true"], .results-list li:hover { background: var(--bg); }
+.results-list img { width: 34px; height: 34px; border-radius: 8px; flex: none; }
+.results-list b { display: block; font-weight: 600; font-size: 14px; }
+.results-list small { color: var(--muted); font-size: 12.5px; }
+.results-list .note { color: var(--muted); font-size: 14px; cursor: default; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-top: 16px; }
+.controls label { font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+.controls select { padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); }
+.go {
+  margin-left: auto; border: 0; border-radius: 10px; padding: 13px 24px; font-weight: 600; font-size: 16px;
+  background: var(--ink); color: var(--bg); cursor: pointer; display: inline-flex; gap: 10px; align-items: center;
+  transition: transform .15s ease;
+}
+.go:hover:not(:disabled) { transform: translateY(-1px); }
+.go:disabled { opacity: .35; cursor: not-allowed; }
+.go svg { width: 22px; height: 14px; }
+.examples { margin-top: 14px; font-size: 14px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.examples button { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 4px 12px; cursor: pointer; font-size: 13.5px; }
+.examples button:hover { border-color: var(--muted); }
+
+/* progress */
+.progress { margin-top: 32px; max-width: 860px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; }
+.progress .head { display: flex; align-items: center; gap: 12px; font-weight: 600; margin-bottom: 6px; }
+.beat { width: 64px; height: 24px; }
+.beat path { fill: none; stroke: var(--neg-2); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 120; animation: beat 1.4s linear infinite; }
+@keyframes beat { from { stroke-dashoffset: 240; } to { stroke-dashoffset: 0; } }
+.prow { display: grid; grid-template-columns: 160px 1fr 110px; gap: 12px; align-items: center; font-size: 14px; margin-top: 10px; }
+.prow .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow .count { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.track { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.track div { height: 100%; width: 0; background: linear-gradient(90deg, var(--neg-2), var(--pos-2)); border-radius: 4px; transition: width .4s ease; }
+.error { margin-top: 20px; color: var(--neg-3); max-width: 70ch; }
+
+/* summary */
+.apps { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-top: 48px; }
+.appcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+.strip { display: flex; gap: 4px; margin: 4px 0 6px; }
+.strip i { flex: 1; height: 30px; border-radius: 5px; min-width: 10px; }
+.strip-cap { display: flex; justify-content: space-between; color: var(--muted); font-size: 12.5px; margin-bottom: 14px; }
+.facts { display: grid; gap: 10px; margin-top: 4px; }
+.fact { display: grid; grid-template-columns: 10px 1fr; gap: 10px; align-items: start; font-size: 15px; }
+.fact::before { content: ""; width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; background: var(--c, var(--muted)); }
+.appcard header { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+.appcard header img { width: 56px; height: 56px; border-radius: 14px; box-shadow: 0 2px 8px rgba(16,35,58,.12); }
+.appcard header small { color: var(--muted); display: block; font-size: 13.5px; }
+.appcard p { margin: 8px 0 0; font-size: 15px; }
+.appcard .muted { color: var(--muted); font-size: 14px; }
+
+/* heatmap */
+.switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--surface); margin-bottom: 16px; }
+.switch button { border: 0; background: transparent; color: var(--muted); padding: 7px 18px; border-radius: 999px; cursor: pointer; font-weight: 500; }
+.switch button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.scroll { overflow-x: auto; }
+table.heat { border-collapse: separate; border-spacing: 4px; min-width: 900px; width: 100%; }
+.heat th { font-size: 13.5px; font-weight: 600; text-align: left; padding: 4px 8px; color: var(--muted); vertical-align: bottom; }
+.heat th.v { color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; vertical-align: middle; }
+.heat th.v small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.heat td { border-radius: 8px; padding: 0; vertical-align: top; min-width: 112px; }
+.heat td.stars { padding: 10px; font-variant-numeric: tabular-nums; font-weight: 600; background: var(--surface); border: 1px solid var(--line); min-width: 74px; }
+.heat td button {
+  display: block; width: 100%; height: 100%; text-align: left; border: 0; border-radius: 8px;
+  padding: 11px 10px; cursor: pointer; background: inherit; color: inherit; transition: transform .12s ease;
+}
+.heat td button:hover { transform: scale(1.03); }
+.heat td button[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--ink); }
+.heat td b { display: block; font-size: 13.5px; font-weight: 600; }
+.heat td span { font-size: 12px; opacity: .88; }
+.heat td.empty { border: 1px dashed var(--line); color: var(--muted); font-size: 12px; padding: 10px; }
+.legend { display: flex; gap: 4px; align-items: center; margin-top: 12px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.legend i { width: 26px; height: 12px; border-radius: 3px; display: inline-block; }
+.drill { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+.drill .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 14px; }
+@media (max-width: 720px) { .drill .cols { grid-template-columns: 1fr; } }
+.drill h4 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+.quote { margin: 0 0 12px; padding-left: 12px; border-left: 3px solid var(--line); font-size: 14.5px; }
+.quote small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.quote.neg { border-color: var(--neg-2); }
+.quote.pos { border-color: var(--pos-2); }
+
+/* spikes */
+.spikes { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+.spike { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; border-top: 5px solid var(--c); }
+.delta { font: 800 44px/1 "Bricolage Grotesque", sans-serif; letter-spacing: -0.03em; color: var(--c); margin: 2px 0 2px; }
+.delta small { font-size: 16px; font-weight: 600; letter-spacing: 0; margin-left: 4px; }
+.spike .meta { color: var(--muted); font-size: 14px; margin: 2px 0 14px; }
+.bars { display: grid; grid-template-columns: 76px 1fr 42px; gap: 6px 10px; align-items: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+.bar { height: 10px; border-radius: 5px; background: var(--neu); overflow: hidden; }
+.bar > div { height: 100%; border-radius: 5px; }
+.spike .quote { margin-top: 14px; margin-bottom: 0; color: var(--muted); }
+table.watch { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.watch th, .watch td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+.watch th { color: var(--muted); font-weight: 600; }
+.empty-note { color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 18px 20px; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+.chart-wrap { position: relative; height: 360px; }
+.panel select { padding: 7px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); margin: 0 0 14px 8px; }
+footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+details.method { margin-top: 72px; color: var(--muted); max-width: 72ch; }
+details.method summary { cursor: pointer; color: var(--ink); font-weight: 600; font-size: 17px; }
+details.method p { margin: 12px 0 0; }
+[hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { .track div, .go { transition: none; } .beat path { animation: none; stroke-dasharray: none; } }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand"><svg viewBox="0 0 30 18" aria-hidden="true"><path d="M1 10h7l3-8 4 15 3-11 2 4h9" fill="none" style="stroke:var(--neg-2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Patch Pulse</div>
+    <h1>Every update has a pulse. Read it.</h1>
+    <p class="lede">Pick any Android app, and a rival if you like. Patch Pulse reads its latest Play Store reviews and shows what people started loving or hating with each release: crashes, speed, pricing, ads, support, design and login.</p>
+    <div class="pulse-wrap">
+      <div class="pulse-crop"><svg class="pulse-svg" id="heroPulse" viewBox="0 0 1080 170" role="img" aria-label="Heartbeat line of Swiggy's crash complaints across ten releases, peaking at version 4.118 where every crash mention was negative"></svg></div>
+      <div class="pulse-cap">Swiggy, share of crash and bug mentions that were negative in each release, from 74% to 100% (June to October 2026). Taller and darker means worse.</div>
+    </div>
+  </div>
+</header>
+<main>
+
+  <form class="picker" id="picker" autocomplete="off">
+    <div class="slots">
+      <div class="slot" data-slot="0"></div>
+      <div class="vs" aria-hidden="true"><span>vs</span></div>
+      <div class="slot" data-slot="1"></div>
+    </div>
+    <div class="controls">
+      <label>Play Store country
+        <select id="country">
+          <option value="in">India</option><option value="us">United States</option><option value="gb">United Kingdom</option>
+          <option value="ca">Canada</option><option value="au">Australia</option><option value="sg">Singapore</option>
+          <option value="ae">UAE</option><option value="ng">Nigeria</option><option value="za">South Africa</option><option value="ph">Philippines</option>
+        </select>
+      </label>
+      <label>Reviews per app
+        <select id="count">
+          <option value="5000">5,000 (about 15 seconds)</option>
+          <option value="10000" selected>10,000 (about 30 seconds)</option>
+          <option value="20000">20,000 (about a minute)</option>
+        </select>
+      </label>
+      <button class="go" id="go" type="submit" disabled><svg viewBox="0 0 22 14" aria-hidden="true"><path d="M1 8h5l2-6 3 11 2-8 2 3h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Take the pulse</button>
+    </div>
+    <div class="examples">Try
+      <button type="button" data-ex="in.swiggy.android,com.application.zomato">Swiggy vs Zomato</button>
+      <button type="button" data-ex="com.spotify.music,com.google.android.apps.youtube.music">Spotify vs YouTube Music</button>
+      <button type="button" data-ex="com.instagram.android">Instagram</button>
+      <button type="button" data-ex="com.duolingo">Duolingo</button>
+    </div>
+  </form>
+
+  <div class="progress" id="progress" hidden aria-live="polite"></div>
+  <p class="error" id="error" role="alert" hidden></p>
+
+  <div id="results" hidden>
+    <div class="apps" id="appCards"></div>
+
+    <section class="block">
+      <h2>Sentiment by release</h2>
+      <p class="sub" id="heatSub">Each cell is what reviewers on that version said about one part of the app. Read down a column to see it get better or worse. Select a cell to read the reviews behind it.</p>
+      <div class="switch" role="group" aria-label="Choose app" id="appSwitch"></div>
+      <div class="scroll"><table class="heat" id="heat"></table></div>
+      <div class="legend" aria-hidden="true">
+        <span>Extremely negative</span>
+        <i style="background:var(--neg-3)"></i><i style="background:var(--neg-2)"></i><i style="background:var(--neg-1)"></i><i style="background:var(--neu)"></i><i style="background:var(--pos-1)"></i><i style="background:var(--pos-2)"></i><i style="background:var(--pos-3)"></i>
+        <span>Extremely positive</span>
+      </div>
+      <div class="drill" id="drill" hidden aria-live="polite"></div>
+    </section>
+
+    <section class="block">
+      <h2>Releases where sentiment moved</h2>
+      <p class="sub">Changes in the share of negative reviews of 10 points or more between one release and the next, that are statistically significant (p &lt; 0.05). Quotes come from the newer release.</p>
+      <div class="spikes" id="spikes"></div>
+      <h3 style="margin:32px 0 4px">Worth watching</h3>
+      <p class="sub">Moves of 10 points or more without enough reviews behind them yet to rule out chance.</p>
+      <div class="scroll" id="watchWrap"><table class="watch" id="watch"></table></div>
+    </section>
+
+    <section class="block">
+      <h2 id="overTitle">What people complain about most</h2>
+      <p class="sub" id="overSub"></p>
+      <div class="panel"><div class="chart-wrap"><canvas id="over" aria-label="Share of negative mentions per category"></canvas></div></div>
+    </section>
+
+    <section class="block">
+      <h2>Trend across releases</h2>
+      <p class="sub">Share of negative mentions for each category, release by release. Gaps mean too few mentions in that release.</p>
+      <div class="panel">
+        <label class="sub" for="trendApp" style="display:inline">App</label><select id="trendApp"></select>
+        <div class="chart-wrap"><canvas id="trend" aria-label="Negative share by category across releases"></canvas></div>
+      </div>
+    </section>
+
+    <details class="method">
+      <summary>How this works</summary>
+      <p>Patch Pulse pulls the newest English reviews from the Google Play Store for the country you pick, along with the app version each reviewer was running. Versions are grouped at whatever depth gives the most comparable releases for that app (Instagram 449, Duolingo 6.95, WhatsApp 2.26.38). If an app doesn't report versions, reviews are grouped by week instead.</p>
+      <p>Each review is split into sentences, and a sentence counts toward a category when it uses that category's vocabulary, so "love the app but the ads are unbearable" counts against ads without dragging down design. Each mention gets a sentiment score that blends the sentence's wording (VADER, extended with app terms like "crashing" and "laggy") with the review's star rating.</p>
+      <p>Releases with fewer than 2% of the pulled reviews are hidden, and cells with fewer than 8 mentions are left blank. Keyword matching can miss complaints phrased in unusual ways, and Hinglish or other mixed-language reviews are scored less reliably.</p>
+    </details>
+  </div>
+  <footer><span>Patch Pulse reads public Google Play reviews. Nothing is stored beyond a six-hour cache.</span><span>Sentiment by VADER plus star ratings.</span></footer>
+</main>
+
+<script>
+const CATS = ["Crashes & bugs", "Speed & performance", "Pricing & payments", "Ads", "Customer support", "UI & design", "Login & account"];
+const SERIES = ["#b3261e", "#c98a1b", "#1f4e79", "#7a5ea8", "#3fa597", "#d16ba5", "#5d6b78"];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = n => Number(n).toLocaleString();
+
+/* hero heartbeat: real Swiggy crash/bug negative share per release */
+(function heroPulse() {
+  const data = [["4.109", 76.3], ["4.110", 82.5], ["4.111", 73.8], ["4.112", 82.1], ["4.113", 86.0],
+                ["4.114", 75.4], ["4.115", 74.8], ["4.116", 75.9], ["4.117", 84.4], ["4.118", 100]];
+  const svg = document.getElementById("heroPulse"), W = 1080, base = 112, step = W / data.length;
+  const amp = v => 18 + (v - 70) / 30 * 88;
+  const tone = v => v >= 95 ? "--neg-3" : v >= 82 ? "--neg-2" : "--neg-1";
+  let segs = "", ticks = "", peak;
+  data.forEach(([v, val], i) => {
+    const x = i * step, a = amp(val);
+    const d = `M${x} ${base} L${x + step * .38} ${base} L${x + step * .45} ${base + 10} L${x + step * .52} ${base - a} L${x + step * .6} ${base + a * .35} L${x + step * .66} ${base} L${x + step} ${base}`;
+    segs += `<path class="line" d="${d}" style="stroke:var(${tone(val)})" pathLength="100"><title>v${v}: ${val}% negative</title></path>`;
+    ticks += `<text class="tick" x="${x + step * .52}" y="${base + 50}" text-anchor="middle">v${v}</text>`;
+    if (i === data.length - 1) peak = [x + step * .52, base - a];
+  });
+  svg.innerHTML = segs + ticks +
+    `<circle class="halo" cx="${peak[0]}" cy="${peak[1]}" r="14"/><circle class="dot" cx="${peak[0]}" cy="${peak[1]}" r="5"/>
+     <text class="note" x="${peak[0] - 16}" y="${peak[1] + 4}" text-anchor="end">v4.118: every crash mention negative</text>`;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const lines = [...svg.querySelectorAll(".line")], extras = svg.querySelectorAll(".halo,.dot,.note");
+  const per = 2400 / lines.length;
+  lines.forEach(l => { l.style.strokeDasharray = "100"; l.style.strokeDashoffset = "100"; });
+  extras.forEach(e => e.style.opacity = 0);
+  requestAnimationFrame(() => {
+    lines.forEach((l, i) => {
+      l.style.transition = `stroke-dashoffset ${per}ms linear ${i * per}ms`;
+      l.style.strokeDashoffset = "0";
+    });
+    setTimeout(() => extras.forEach(e => { e.style.transition = "opacity .5s"; e.style.opacity = ""; }), 2400);
+  });
+})();
+
+const chosen = [null, null];
+let RESULTS = null, ORDER = [], currentApp = null, charts = {};
+
+/* ---------- picker ---------- */
+function renderSlot(i) {
+  const el = document.querySelector(`.slot[data-slot="${i}"]`);
+  const lab = i === 0 ? "App" : "Compare with (optional)";
+  const a = chosen[i];
+  if (a) {
+    el.innerHTML = `<label>${lab}</label><div class="chosen">
+      ${a.icon ? `<img src="${esc(a.icon)}" alt="" onerror="this.style.visibility='hidden'">` : ""}
+      <div class="t"><b>${esc(a.title || a.appId)}</b><small>${esc(a.developer || a.appId)}</small></div>
+      <button type="button" aria-label="Remove ${esc(a.title || a.appId)}">×</button></div>`;
+    el.querySelector("button").onclick = () => { chosen[i] = null; renderSlot(i); updateGo(); el.querySelector("input")?.focus(); };
+  } else {
+    el.innerHTML = `<label for="q${i}">${lab}</label>
+      <input id="q${i}" type="search" placeholder="${i === 0 ? "Search an app, or paste a Play Store link" : "Search a competitor"}"
+        role="combobox" aria-expanded="false" aria-controls="r${i}" aria-autocomplete="list">
+      <ul class="results-list" id="r${i}" role="listbox" hidden></ul>`;
+    wireSearch(i, el);
+  }
+}
+
+function wireSearch(i, el) {
+  const input = el.querySelector("input"), list = el.querySelector("ul");
+  let timer, items = [], active = -1, seq = 0;
+  const close = () => { list.hidden = true; input.setAttribute("aria-expanded", "false"); active = -1; };
+  const pick = a => { chosen[i] = a; renderSlot(i); updateGo(); };
+  const draw = () => {
+    list.innerHTML = items.length ? items.map((a, k) => `<li role="option" id="r${i}-${k}" aria-selected="${k === active}">
+      ${a.icon ? `<img src="${esc(a.icon)}" alt="" onerror="this.style.visibility='hidden'">` : ""}<div><b>${esc(a.title)}</b><small>${esc(a.developer || "")}${a.score ? ", " + a.score.toFixed(1) + "★" : ""}</small></div></li>`).join("")
+      : `<li class="note">No apps found. Try a different name or paste the Play Store link.</li>`;
+    [...list.querySelectorAll("li[role=option]")].forEach((li, k) => li.onmousedown = e => { e.preventDefault(); pick(items[k]); });
+    list.hidden = false; input.setAttribute("aria-expanded", "true");
+    input.setAttribute("aria-activedescendant", active >= 0 ? `r${i}-${active}` : "");
+  };
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { close(); return; }
+    timer = setTimeout(async () => {
+      const my = ++seq;
+      list.innerHTML = `<li class="note">Searching the Play Store…</li>`; list.hidden = false;
+      try {
+        const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&country=${$("#country").value}`);
+        if (!r.ok) throw new Error((await r.json()).detail);
+        if (my !== seq) return;
+        items = await r.json(); active = items.length ? 0 : -1; draw();
+      } catch (e) {
+        if (my === seq) { list.innerHTML = `<li class="note">Search failed. Check your connection and try again.</li>`; }
+      }
+    }, 300);
+  });
+  input.addEventListener("keydown", e => {
+    if (list.hidden || !items.length) return;
+    if (e.key === "ArrowDown") { active = (active + 1) % items.length; draw(); e.preventDefault(); }
+    else if (e.key === "ArrowUp") { active = (active - 1 + items.length) % items.length; draw(); e.preventDefault(); }
+    else if (e.key === "Enter" && active >= 0) { e.preventDefault(); pick(items[active]); }
+    else if (e.key === "Escape") close();
+  });
+  input.addEventListener("blur", () => setTimeout(close, 120));
+}
+
+function updateGo() { $("#go").disabled = !chosen[0]; }
+renderSlot(0); renderSlot(1);
+
+document.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => {
+  const ids = b.dataset.ex.split(",");
+  chosen[0] = { appId: ids[0], title: b.textContent.split(" vs ")[0] };
+  chosen[1] = ids[1] ? { appId: ids[1], title: b.textContent.split(" vs ")[1] } : null;
+  $("#country").value = "in";
+  renderSlot(0); renderSlot(1); updateGo(); start();
+});
+
+$("#picker").addEventListener("submit", e => { e.preventDefault(); start(); });
+
+/* ---------- jobs ---------- */
+async function start() {
+  const apps = chosen.filter(Boolean).map(a => a.appId);
+  if (!apps.length) return;
+  const country = $("#country").value, count = +$("#count").value;
+  history.replaceState(null, "", `?apps=${apps.join(",")}&country=${country}&n=${count}`);
+  $("#error").hidden = true; $("#results").hidden = true; $("#go").disabled = true;
+  const prog = $("#progress"); prog.hidden = false;
+  prog.innerHTML = `<div class="head"><svg class="beat" viewBox="0 0 64 24" aria-hidden="true"><path d="M1 13h16l4-10 6 19 5-14 3 5h28"/></svg>Taking the pulse</div><p class="sub" style="margin:0 0 6px">Reading the newest reviews straight from the Play Store.</p>` + apps.map(a => `<div class="prow"><span class="name">${esc(nameOf(a))}</span><div class="track"><div id="p-${cssId(a)}"></div></div><span class="count" id="c-${cssId(a)}">Waiting</span></div>`).join("");
+  try {
+    const r = await fetch("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apps, country, count }) });
+    if (!r.ok) throw new Error("The server couldn't start the analysis.");
+    const { job } = await r.json();
+    await poll(job, apps, count);
+  } catch (e) {
+    showError(e.message);
+  } finally { updateGo(); }
+}
+
+const cssId = s => s.replace(/[^\w]/g, "_");
+const nameOf = id => (chosen.find(a => a && a.appId === id)?.title) || id;
+
+function poll(job, apps, count) {
+  return new Promise((resolve, reject) => {
+    const tick = async () => {
+      try {
+        const r = await fetch(`/api/jobs/${job}`);
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.detail);
+        apps.forEach(a => {
+          const n = j.progress[a] || 0;
+          $(`#p-${cssId(a)}`).style.width = Math.min(100, n / count * 100) + "%";
+          const stage = j.stage.endsWith(a) ? j.stage.split(":")[0] : null;
+          $(`#c-${cssId(a)}`).textContent =
+            stage === "analyze" ? "Analyzing" : n ? `${fmt(n)} reviews` : stage === "info" ? "Looking up app" : (j.status === "done" ? "Done" : "Waiting");
+        });
+        if (j.status === "done") { $("#progress").hidden = true; render(j.results, apps); resolve(); return; }
+        if (j.status === "error") throw new Error(friendly(j.error));
+        setTimeout(tick, 1000);
+      } catch (e) { reject(e); }
+    };
+    tick();
+  });
+}
+
+function friendly(msg) {
+  if (/not found|404/i.test(msg)) return "That app couldn't be found on the Play Store for this country. Check the app or pick a different country.";
+  if (/Not enough reviews|no English reviews/i.test(msg)) return msg;
+  return "Something went wrong while reading reviews: " + msg + ". The Play Store sometimes rate-limits requests; wait a minute and try again.";
+}
+function showError(m) { $("#progress").hidden = true; const e = $("#error"); e.textContent = m; e.hidden = false; }
+
+/* ---------- render ---------- */
+function colorFor(s) {
+  if (s <= -0.6) return ["--neg-3", "#fff"];
+  if (s <= -0.35) return ["--neg-2", "#fff"];
+  if (s <= -0.1) return ["--neg-1", null];
+  if (s < 0.1) return ["--neu", null];
+  if (s < 0.4) return ["--pos-1", null];
+  if (s < 0.6) return ["--pos-2", "#fff"];
+  return ["--pos-3", "#fff"];
+}
+function labelFor(sc) {
+  if (sc <= -0.6) return "Extremely negative"; if (sc <= -0.35) return "Very negative"; if (sc <= -0.1) return "Negative";
+  if (sc < 0.1) return "Neutral"; if (sc < 0.4) return "Positive"; if (sc < 0.6) return "Very positive"; return "Extremely positive";
+}
+const periodName = (d, p) => d.kind === "week" ? "Week of " + new Date(p).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "v" + p;
+
+function render(results, apps) {
+  RESULTS = results; ORDER = apps.filter(a => results[a]); currentApp = ORDER[0];
+  ORDER.forEach(a => { const c = chosen.find(x => x && x.appId === a); if (c) Object.assign(c, results[a].info); });
+  renderSlot(0); renderSlot(1);
+
+  $("#appCards").innerHTML = ORDER.map(a => {
+    const d = results[a], i = d.info;
+    const ranked = Object.entries(d.overall).filter(([, v]) => v.n >= 15);
+    const worst = [...ranked].sort((x, y) => y[1].neg * y[1].share - x[1].neg * x[1].share)[0];
+    const best = [...ranked].sort((x, y) => x[1].neg - y[1].neg)[0];
+    const sig = d.spikes.filter(s => s.significant);
+    const strip = d.periods.map(p => {
+      let w = 0, t = 0;
+      CATS.forEach(c => { const cell = d.cells[`${p}|${c}`]; if (cell) { w += cell.score * cell.n; t += cell.n; } });
+      const sc = t ? w / t : 0;
+      return `<i style="background:var(${colorFor(sc)[0]})" title="${esc(periodName(d, p))}: ${t ? labelFor(sc) : "too few mentions"}, ${d.stars[p].toFixed(1)}★"></i>`;
+    }).join("");
+    const first = d.periods[0], last = d.periods[d.periods.length - 1];
+    return `<article class="appcard"><header>${i.icon ? `<img src="${esc(i.icon)}" alt="" onerror="this.style.visibility='hidden'">` : ""}<div><h3>${esc(i.title)}</h3><small>${esc(i.developer)}${i.score ? ", " + i.score.toFixed(1) + "★ on Play" : ""}</small></div></header>
+      <div class="strip" aria-hidden="true">${strip}</div>
+      <div class="strip-cap"><span>${esc(periodName(d, first))}, ${d.stars[first].toFixed(1)}★</span><span>${esc(periodName(d, last))}, ${d.stars[last].toFixed(1)}★</span></div>
+      <div class="facts">
+      ${worst ? `<div class="fact" style="--c:var(--neg-2)"><span>Biggest complaint is <b>${worst[0].toLowerCase()}</b>, in ${worst[1].share}% of reviews and ${Math.round(worst[1].neg)}% negative.</span></div>` : ""}
+      ${best && best[0] !== worst?.[0] ? `<div class="fact" style="--c:var(--pos-2)"><span>Least complained about is <b>${best[0].toLowerCase()}</b>, ${Math.round(best[1].neg)}% negative.</span></div>` : ""}
+      <div class="fact" style="--c:var(--accent)"><span>${sig.length ? `<b>${sig.length} significant shift${sig.length > 1 ? "s" : ""}</b> between releases.` : "No significant shifts between releases."} ${fmt(d.reviews_used)} reviews across ${d.periods.length} ${d.kind === "week" ? "weeks" : "releases"}.</span></div>
+      </div></article>`;
+  }).join("");
+
+  const sw = $("#appSwitch"); sw.hidden = ORDER.length < 2;
+  sw.innerHTML = ORDER.map(a => `<button type="button" data-a="${esc(a)}">${esc(results[a].info.title)}</button>`).join("");
+  sw.querySelectorAll("button").forEach(b => b.onclick = () => { currentApp = b.dataset.a; renderHeat(); });
+  $("#results").hidden = false; // charts need a visible canvas to size themselves
+  renderHeat(); renderSpikes(); renderOverview(); renderTrendSelect();
+  $("#appCards").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+}
+
+function renderHeat() {
+  $("#appSwitch").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.a === currentApp));
+  const d = RESULTS[currentApp];
+  let h = `<thead><tr><th>${d.kind === "week" ? "Week" : "App version"}</th><th>Avg rating</th>` + CATS.map(c => `<th scope="col">${c}</th>`).join("") + "</tr></thead><tbody>";
+  [...d.periods].reverse().forEach(p => {
+    h += `<tr><th class="v" scope="row">${esc(periodName(d, p))}<small>${fmt(d.counts[p])} reviews</small></th><td class="stars">${d.stars[p].toFixed(1)}★</td>`;
+    CATS.forEach(c => {
+      const cell = d.cells[`${p}|${c}`];
+      if (!cell) { h += `<td class="empty">Too few mentions</td>`; return; }
+      const [bg, fg] = colorFor(cell.score);
+      h += `<td style="background:var(${bg});${fg ? "color:" + fg : ""}"><button type="button" aria-pressed="false" data-k="${esc(p + "|" + c)}"><b>${cell.label}</b><span>${Math.round(cell.neg)}% negative, ${cell.n} mentions</span></button></td>`;
+    });
+    h += "</tr>";
+  });
+  $("#heat").innerHTML = h + "</tbody>";
+  $("#heat").querySelectorAll("button").forEach(b => b.onclick = () => {
+    $("#heat").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", "false"));
+    b.setAttribute("aria-pressed", "true"); drill(b.dataset.k);
+  });
+  $("#drill").hidden = true;
+}
+
+function quoteHtml(q, cls) {
+  return `<p class="quote ${cls}">"${esc(q.text)}"<small>${q.stars}★${q.thumbs ? `, ${fmt(q.thumbs)} found this helpful` : ""}</small></p>`;
+}
+function drill(k) {
+  const d = RESULTS[currentApp], cell = d.cells[k];
+  const [p, c] = k.split("|");
+  const neg = cell.quotes.negative, pos = cell.quotes.positive;
+  $("#drill").innerHTML = `<h3>${esc(c)} on ${esc(periodName(d, p))}</h3>
+    <p class="sub" style="margin:4px 0 0">${cell.label}: ${Math.round(cell.neg)}% of ${cell.n} mentions were negative. Most helpful reviews first.</p>
+    <div class="cols"><div><h4>Negative</h4>${neg.length ? neg.map(q => quoteHtml(q, "neg")).join("") : `<p class="sub">No negative mentions with enough detail.</p>`}</div>
+    <div><h4>Positive</h4>${pos.length ? pos.map(q => quoteHtml(q, "pos")).join("") : `<p class="sub">No positive mentions with enough detail.</p>`}</div></div>`;
+  $("#drill").hidden = false;
+}
+
+function renderSpikes() {
+  const all = ORDER.flatMap(a => RESULTS[a].spikes.map(s => ({ ...s, app: a, d: RESULTS[a] })));
+  const sig = all.filter(s => s.significant), watch = all.filter(s => !s.significant);
+  $("#spikes").innerHTML = sig.length ? sig.map(s => {
+    const col = s.worse ? "var(--neg-2)" : "var(--pos-2)";
+    return `<article class="spike" style="--c:${col}"><div class="delta">${s.worse ? "▲" : "▼"} ${Math.abs(s.change).toFixed(0)}<small>pts negative</small></div>
+      <h3>${ORDER.length > 1 ? esc(s.d.info.title) + ": " : ""}${s.category} ${s.worse ? "got worse" : "got better"}</h3>
+      <div class="meta">${esc(periodName(s.d, s.from))} to ${esc(periodName(s.d, s.to))}</div>
+      <div class="bars">
+        <span>${esc(periodName(s.d, s.from))}</span><div class="bar"><div style="width:${s.before}%;background:var(--muted)"></div></div><span>${Math.round(s.before)}%</span>
+        <span>${esc(periodName(s.d, s.to))}</span><div class="bar"><div style="width:${s.after}%;background:${col}"></div></div><span>${Math.round(s.after)}%</span>
+      </div>
+      <div class="meta" style="margin:8px 0 0">Negative share, from ${s.n_before} and ${s.n_after} mentions (p = ${s.p})</div>
+      ${s.quotes.map(q => `<p class="quote">"${esc(q.text)}"</p>`).join("")}</article>`;
+  }).join("") : `<p class="empty-note">No release-to-release change was large enough and backed by enough reviews to be sure it isn't chance. Pulling more reviews gives each release a bigger sample.</p>`;
+  $("#watch").innerHTML = watch.length
+    ? `<thead><tr>${ORDER.length > 1 ? "<th>App</th>" : ""}<th>Category</th><th>Change</th><th>Negative share</th><th>Mentions</th><th>p</th></tr></thead><tbody>` +
+      watch.slice(0, 12).map(s => `<tr>${ORDER.length > 1 ? `<td>${esc(s.d.info.title)}</td>` : ""}<td>${s.category}</td><td>${esc(periodName(s.d, s.from))} to ${esc(periodName(s.d, s.to))}</td>
+        <td style="color:${s.worse ? "var(--neg-2)" : "var(--pos-2)"}">${Math.round(s.before)}% to ${Math.round(s.after)}%</td><td>${s.n_before} / ${s.n_after}</td><td>${s.p}</td></tr>`).join("") + "</tbody>"
+    : `<tbody><tr><td>Nothing to watch right now.</td></tr></tbody>`;
+}
+
+function baseOpts(extra = {}) {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    scales: { y: { min: 0, max: 100, ticks: { callback: v => v + "%" } } },
+    ...extra,
+  };
+}
+
+function renderOverview() {
+  Chart.defaults.font.family = '"Instrument Sans", system-ui, sans-serif';
+  Chart.defaults.color = css("--muted"); Chart.defaults.borderColor = css("--line");
+  const two = ORDER.length > 1;
+  $("#overTitle").textContent = two ? "Head to head" : "What people complain about most";
+  $("#overSub").textContent = two
+    ? "Share of negative mentions per category across all the reviews pulled for each app. Lower is better."
+    : "Share of negative mentions per category across all the reviews pulled. Hover a bar to see how often the category comes up.";
+  charts.over?.destroy();
+  charts.over = new Chart($("#over"), {
+    type: "bar",
+    data: {
+      labels: CATS,
+      datasets: ORDER.map((a, i) => ({
+        label: RESULTS[a].info.title,
+        data: CATS.map(c => RESULTS[a].overall[c]?.n >= 8 ? RESULTS[a].overall[c].neg : null),
+        backgroundColor: i ? css("--pos-2") : css("--accent"), borderRadius: 4,
+      })),
+    },
+    options: baseOpts({
+      plugins: {
+        legend: { display: two },
+        tooltip: { callbacks: { label: ctx => {
+          const o = RESULTS[ORDER[ctx.datasetIndex]].overall[CATS[ctx.dataIndex]];
+          return `${ctx.dataset.label}: ${ctx.parsed.y}% negative, mentioned in ${o.share}% of reviews`;
+        } } },
+      },
+    }),
+  });
+}
+
+function renderTrendSelect() {
+  const sel = $("#trendApp");
+  sel.innerHTML = ORDER.map(a => `<option value="${esc(a)}">${esc(RESULTS[a].info.title)}</option>`).join("");
+  sel.onchange = renderTrend; renderTrend();
+}
+function renderTrend() {
+  const d = RESULTS[$("#trendApp").value];
+  charts.trend?.destroy();
+  charts.trend = new Chart($("#trend"), {
+    type: "line",
+    data: {
+      labels: d.periods.map(p => periodName(d, p)),
+      datasets: CATS.map((c, i) => ({
+        label: c, data: d.periods.map(p => d.cells[`${p}|${c}`]?.neg ?? null),
+        borderColor: SERIES[i], backgroundColor: SERIES[i], spanGaps: true, tension: .25, pointRadius: 3,
+      })),
+    },
+    options: baseOpts(),
+  });
+}
+
+/* ---------- shareable links ---------- */
+(function fromUrl() {
+  const q = new URLSearchParams(location.search);
+  const apps = (q.get("apps") || "").split(",").filter(Boolean).slice(0, 2);
+  if (!apps.length) return;
+  apps.forEach((a, i) => chosen[i] = { appId: a, title: a });
+  if (q.get("country")) $("#country").value = q.get("country");
+  if (q.get("n")) $("#count").value = q.get("n");
+  renderSlot(0); renderSlot(1); updateGo(); start();
+})();
+</script>
+</body>
+</html>
